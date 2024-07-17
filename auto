@@ -1,0 +1,183 @@
+local AutofarmTab = Window:CreateTab("Autofarm", nil) -- Title, Image
+local AutofarmSection = AutofarmTab:CreateSection("Main")
+
+local Button = AutofarmTab:CreateButton({
+   Name = "Autofarm",
+   Callback = function()
+         -- Create the ScreenGui
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+-- Create the frame
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 260, 0, 150)  -- Original width and longer height
+Frame.Position = UDim2.new(0, 100, 0, 100)
+Frame.BackgroundColor3 = Color3.fromRGB(60, 60, 60)  -- Smokish grey color
+Frame.Parent = ScreenGui
+
+-- Create the frame title
+local FrameTitle = Instance.new("TextLabel")
+FrameTitle.Size = UDim2.new(1, 0, 0, 30)
+FrameTitle.Position = UDim2.new(0, 0, 0, 0)
+FrameTitle.BackgroundColor3 = Color3.fromRGB(110, 153, 202)
+FrameTitle.Text = "Drzys Autofarm"
+FrameTitle.TextColor3 = Color3.fromRGB(242, 243, 243)
+FrameTitle.Font = Enum.Font.SourceSansBold
+FrameTitle.TextSize = 24
+FrameTitle.Parent = Frame
+
+-- Create the button
+local Button = Instance.new("TextButton")
+Button.Size = UDim2.new(0, 240, 0, 50)
+Button.Position = UDim2.new(0, 10, 0, 40)  -- Higher position within the frame
+Button.BackgroundColor3 = Color3.fromRGB(110, 153, 202)
+Button.Text = "Autofarm: OFF"
+Button.TextColor3 = Color3.fromRGB(242, 243, 243)
+Button.Font = Enum.Font.SourceSansBold
+Button.TextSize = 24
+Button.Parent = Frame
+
+-- Variables for drag functionality
+local dragging = false
+local dragInput, mousePos, framePos
+
+-- Function to update the frame's position
+local function update(input)
+    local delta = input.Position - mousePos
+    Frame.Position = UDim2.new(framePos.X.Scale, framePos.X.Offset + delta.X, framePos.Y.Scale, framePos.Y.Offset + delta.Y)
+end
+
+Frame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        mousePos = input.Position
+        framePos = Frame.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+Frame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        update(input)
+    end
+end)
+
+-- Variables
+local autofarmOn = false
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+local camera = game.Workspace.CurrentCamera
+local cframe1 = CFrame.new(-555.769897, 3.53714561, -89.4789963, 0.00705527281, 1.04662078e-07, -0.999975085, 1.46552104e-08, 1, 1.04768084e-07, 0.999975085, -1.53940132e-08, 0.00705527281)
+local cframe2 = CFrame.new(-401.491241, 3.4121933, -71.5438614, -0.998984277, -2.98057223e-08, -0.0450603478, -3.20220401e-08, 1, 4.84637397e-08, 0.0450603478, 4.98574373e-08, -0.998984277)
+
+-- Function to move the player smoothly with a speed of 30
+local function moveToPosition(targetCFrame, speed)
+    local startCFrame = humanoidRootPart.CFrame
+    local distance = (targetCFrame.p - startCFrame.p).magnitude
+    local duration = distance / speed
+    local elapsed = 0
+    while elapsed < duration do
+        if not autofarmOn then return end
+        elapsed = elapsed + game:GetService("RunService").Heartbeat:Wait()
+        humanoidRootPart.CFrame = startCFrame:Lerp(targetCFrame, elapsed / duration)
+        camera.CFrame = humanoidRootPart.CFrame * CFrame.new(0, 2, -10) -- Adjust the camera's position relative to the player
+    end
+    humanoidRootPart.CFrame = targetCFrame
+    camera.CFrame = humanoidRootPart.CFrame * CFrame.new(0, 2, -10) -- Adjust the camera's position relative to the player
+end
+
+-- Function to simulate holding the "E" key
+local function holdKeyE(duration)
+    local VirtualInputManager = game:GetService("VirtualInputManager")
+    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+    wait(duration)
+    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+end
+
+-- Function to toggle collisions
+local function setCollisionsEnabled(enabled)
+    for _, part in pairs(character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = enabled
+        end
+    end
+end
+
+-- Function to toggle the autofarm
+local function toggleAutofarm()
+    autofarmOn = not autofarmOn
+    Button.Text = autofarmOn and "Autofarm: ON" or "Autofarm: OFF"
+    
+    setCollisionsEnabled(not autofarmOn)
+    
+    while autofarmOn do
+        -- Move to the first position
+        moveToPosition(cframe1, 30)
+        if not autofarmOn then break end
+        wait(1)
+        
+        -- Hold "E" for 1 second
+        holdKeyE(1)
+        if not autofarmOn then break end
+        
+        wait(1)
+        
+        -- Equip the tool named "Crate"
+        local crateTool = player.Backpack:FindFirstChild("Crate")
+        if crateTool then
+            crateTool.Parent = character
+        end
+        
+        if not autofarmOn then break end
+        wait(1)
+        
+        -- Move to the second position
+        moveToPosition(cframe2, 30)
+        if not autofarmOn then break end
+        wait(1)
+        
+        -- Hold "E" for 1 second
+        holdKeyE(1)
+        if not autofarmOn then break end
+        
+        wait(1)
+        
+        -- Move back to the first position
+        moveToPosition(cframe1, 30)
+        if not autofarmOn then break end
+        wait(1)
+    end
+    
+    -- Re-enable collisions when autofarm is turned off
+    setCollisionsEnabled(true)
+end
+
+-- Check if character dies
+local function onCharacterRemoved()
+    autofarmOn = false
+    Button.Text = "Autofarm: OFF"
+    setCollisionsEnabled(true)
+end
+
+character.HumanoidRootPart.AncestryChanged:Connect(function(_, parent)
+    if parent == nil then
+        onCharacterRemoved()
+    end
+end)
+
+-- Connect the button click event to toggle the autofarm
+Button.MouseButton1Click:Connect(toggleAutofarm)
+   end,
+})
